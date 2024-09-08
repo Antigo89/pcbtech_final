@@ -1,0 +1,44 @@
+#include "gpio.h"
+#include "stm32f4xx.h"
+
+void GPIO_init(void) {
+   /* Enable GPIOE clock */
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN;
+
+  /* Init user buttons on board */
+  /* Init SW1-SW3 to input, no pull-up/pull-down */
+  GPIOE->MODER &= ~(GPIO_MODER_MODE10|GPIO_MODER_MODE11|GPIO_MODER_MODE12);
+  /*  Interrupt buttons */
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  SYSCFG->EXTICR[2] |= SYSCFG_EXTICR3_EXTI10_PE|SYSCFG_EXTICR3_EXTI11_PE;
+  SYSCFG->EXTICR[3] |= SYSCFG_EXTICR4_EXTI12_PE;
+
+  EXTI->PR |= EXTI_PR_PR10|EXTI_PR_PR11|EXTI_PR_PR12;
+  EXTI->FTSR |= EXTI_FTSR_TR10|EXTI_FTSR_TR11|EXTI_FTSR_TR12;
+  //EXTI->IMR |= EXTI_IMR_IM10|EXTI_IMR_IM11|EXTI_IMR_IM12;
+  NVIC_SetPriority(EXTI15_10_IRQn, 13);
+  NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+  /* Init LED1-LED3 to output */
+  GPIOE->MODER &= ~(GPIO_MODER_MODE13|GPIO_MODER_MODE14|GPIO_MODER_MODE15);
+  GPIOE->MODER |= GPIO_MODER_MODE13_0|GPIO_MODER_MODE14_0|GPIO_MODER_MODE15_0;
+  /* LED1-LED3 off */
+  GPIOE->BSRR |= GPIO_BSRR_BS13|GPIO_BSRR_BS14|GPIO_BSRR_BS15;
+
+}
+
+void vLedOff(uint8_t led) {
+  GPIOE->BSRR |= (1 << (led+12));
+}
+
+void vLedOn(uint8_t led) {
+  GPIOE->BSRR |= (1 << (led+28));
+}
+
+void vLedAllOff(void) {
+  GPIOE->BSRR |= GPIO_BSRR_BS13|GPIO_BSRR_BS14|GPIO_BSRR_BS15;
+}
+
+void vLedAllOn(void) {
+  GPIOE->BSRR |= GPIO_BSRR_BR13|GPIO_BSRR_BR14|GPIO_BSRR_BR15;
+}
